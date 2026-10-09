@@ -1,0 +1,28 @@
+# ── Your data: never on GitHub ───────────────────────────────────────────────
+# Covers (folder and its .htaccess stay tracked)
+public/img/manga/*
+!public/img/manga/.htaccess
+!public/img/manga/.gitkeep
+
+# Chapter archives
+storage/archives/chapters/*
+!storage/archives/chapters/.gitkeep
+
+# Security journal
+storage/logs/*
+!storage/logs/.gitkeep
+
+# ── Secrets: database credentials + password hash ────────────────────────────
+# Commit config/*.example.php instead
+config/mysql.php
+config/auth.php
+config/auth.php.tmp*
+
+# ── Temporary / editor / system files ────────────────────────────────────────
+*.optimized_*.zip
+*.log
+Thumbs.db
+.DS_Store
+.vs/
+.vscode/
+.idea/

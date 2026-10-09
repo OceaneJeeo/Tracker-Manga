@@ -1,0 +1,17 @@
+# ── PHP limits for chapter uploads ───────────────────────────────────────────
+php_value upload_max_filesize 210M
+php_value post_max_size 220M
+php_value max_execution_time 300
+php_value max_input_time 300
+php_value memory_limit 512M
+
+# ── Only public/ is meant to be reachable ────────────────────────────────────
+# If the site is served from this folder (XAMPP: http://localhost/Gestionnaire/),
+# everything that is not public/ answers "403 Forbidden", .git included.
+# (Not needed when the web server's document root IS public/ — see README.)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(config|src|storage|tools|database|docs|tests)(/|$) - [F,L]
+    RewriteRule (^|/)\.git(/|$) - [F,L]
+    RewriteRule ^(README\.md|LICENSE|\.gitignore)$ - [F,L]
+</IfModule>

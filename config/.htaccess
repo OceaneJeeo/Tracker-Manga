@@ -1,0 +1,9 @@
+# Direct access forbidden: this folder holds the password hash and the database credentials.
+# (PHP files include it from the file system, so the site keeps working.)
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

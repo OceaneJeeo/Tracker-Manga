@@ -1,0 +1,10 @@
+# Cover images only: never run scripts from this folder.
+Options -Indexes -ExecCGI
+<IfModule mod_authz_core.c>
+    <FilesMatch "(?i)\.(php[0-9]?|phtml|phar|pl|py|cgi)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
