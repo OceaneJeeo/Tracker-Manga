@@ -1717,33 +1717,106 @@ async function openSecurityLog() {
 // FULL BACKUP / RESTORE (ZIP)
 // ════════════════════════════════════════
 
-function downloadBackup() {
-    window.location.href = 'api/backup.php';
-    toast('Sauvegarde en cours de téléchargement…', 'info');
+/** Export: preflight (size / disk space) then download. withChapters=false => light export. */
+async function downloadBackup(withChapters = true) {
+    const qs = withChapters ? '' : 'chapters=0&';
+    try {
+        toast('Préparation de la sauvegarde…', 'info');
+        const res  = await fetch('api/backup.php?' + qs + 'check=1');
+        const data = await res.json();
+        if (!data.success) { toast(data.error || 'Sauvegarde impossible', 'error', 8000); return; }
+        toast(`${data.mangas} manga, ${data.covers} cover(s)` + (withChapters ? `, ${data.chapters} chapitre(s) (${formatBytes(data.bytes)})` : '')
+              + ' — le téléchargement démarre dès que l\'archive est prête, ça peut prendre un moment.', 'info', 8000);
+        window.location.href = 'api/backup.php?' + qs.replace(/&$/, '');
+    } catch (e) {
+        toast('Erreur pendant la préparation de la sauvegarde', 'error');
+    }
 }
 
 function triggerRestore() {
     document.getElementById('restoreFileInput').click();
 }
 
+const IMPORT_CHUNK = 8 * 1024 * 1024;   // 8 Mo per request: far below PHP's upload limits
+
+async function importApi(fd) {
+    const res  = await fetch('api/import_backup.php', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Erreur');
+    return data;
+}
+
+function importUi(status, pct, detail) {
+    if (status !== null) document.getElementById('importStatus').textContent = status;
+    if (pct !== null)    document.getElementById('importBar').style.width = pct + '%';
+    if (detail !== null) document.getElementById('importDetail').textContent = detail;
+}
+
+const warnLeave = e => { e.preventDefault(); e.returnValue = ''; };
+
 document.getElementById('restoreFileInput').addEventListener('change', async function() {
     if (!this.files || !this.files[0]) return;
     const file = this.files[0];
     this.value = '';
-    if (!confirm('Restaurer cette sauvegarde ?\nLes manga déjà présents (même titre) sont ignorés : rien n\'est écrasé ni supprimé.')) return;
+    if (!confirm('Importer cette sauvegarde ?\nCovers, chapitres et progression de lecture sont restaurés automatiquement.\nCe qui existe déjà (même titre / même chapitre) est ignoré : rien n\'est écrasé ni supprimé.')) return;
 
-    const fd = new FormData();
-    fd.append('backup', file);
+    const uploadId = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+    document.getElementById('importClose').style.display = 'none';
+    importUi('Envoi de la sauvegarde…', 0, '');
+    openModal('importModal');
+    window.addEventListener('beforeunload', warnLeave);
+
     try {
-        const res  = await fetch('api/restore_backup.php', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (!data.success) { toast('Erreur : ' + data.error, 'error'); return; }
+        // 1. Upload in chunks (0 → 50 %)
+        const total = Math.max(1, Math.ceil(file.size / IMPORT_CHUNK));
+        for (let i = 0; i < total; i++) {
+            const fd = new FormData();
+            fd.append('action', 'chunk');
+            fd.append('upload_id', uploadId);
+            fd.append('index', i);
+            fd.append('total', total);
+            fd.append('chunk', file.slice(i * IMPORT_CHUNK, (i + 1) * IMPORT_CHUNK), 'chunk.bin');
+            await importApi(fd);
+            importUi(null, Math.round((i + 1) / total * 50), `${formatBytes(Math.min((i + 1) * IMPORT_CHUNK, file.size))} / ${formatBytes(file.size)}`);
+        }
+
+        // 2. Manga + covers
+        importUi('Restauration des manga et des covers…', 50, '');
+        let fd = new FormData();
+        fd.append('action', 'start');
+        fd.append('upload_id', uploadId);
+        let r = await importApi(fd);
+
+        // 3. Chapters, a few at a time (50 → 100 %)
+        while (!r.done) {
+            importUi('Restauration des chapitres…', 50 + Math.round((r.processed || 0) / r.total_chapters * 50),
+                     `${r.processed || 0} / ${r.total_chapters}`);
+            fd = new FormData();
+            fd.append('action', 'step');
+            fd.append('upload_id', uploadId);
+            r = await importApi(fd);
+        }
+
+        const s = r.stats;
+        importUi('Import terminé ✅', 100,
+            `${s.imported} manga ajouté(s)` + (s.skipped ? `, ${s.skipped} déjà présent(s)` : '') +
+            `, ${s.covers} cover(s), ${s.chapters_imported || 0} chapitre(s)` +
+            (s.chapters_skipped ? `, ${s.chapters_skipped} déjà présent(s)` : '') +
+            (s.chapters_failed ? `, ${s.chapters_failed} en échec` : '') +
+            (s.invalid ? `, ${s.invalid} manga invalide(s)` : ''));
         await loadMangas();
-        toast(`${data.imported} manga(s) restauré(s)` +
-              (data.skipped ? `, ${data.skipped} déjà présent(s)` : '') +
-              (data.invalid ? `, ${data.invalid} invalide(s)` : '') + ' !', 'success');
+        toast('Sauvegarde importée !', 'success');
     } catch (e) {
-        toast('Erreur lors de la restauration', 'error');
+        importUi('Import interrompu ❌', null, e.message || 'Erreur inconnue');
+        const fd = new FormData();
+        fd.append('action', 'cancel');
+        fd.append('upload_id', uploadId);
+        try { await importApi(fd); } catch (_) {}
+        await loadMangas();   // some manga may already have been restored
+        toast('Erreur lors de l\'import : ' + (e.message || ''), 'error', 8000);
+    } finally {
+        window.removeEventListener('beforeunload', warnLeave);
+        document.getElementById('importClose').style.display = '';
     }
 });
 

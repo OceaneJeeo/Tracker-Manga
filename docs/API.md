@@ -73,7 +73,7 @@ Reading statistics (`total`, `week`, `month`, `daily`, `top`, `streak`, `habits`
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `backup.php` | GET | ZIP with `collection.json` + local covers (chapters are not included) |
-| `restore_backup.php` | POST `backup` (ZIP) | Adds the manga that are missing (same title = skipped). `{"imported", "skipped", "invalid", "covers"}` |
+| `backup.php` | GET | ZIP with `collection.json` (manga, chapters, reading progress) + `covers/` + `chapters/`. `?chapters=0` = light export, `?check=1` = JSON preflight `{mangas, covers, chapters, bytes}` (also checks free disk space) |
+| `import_backup.php` | POST | Chunked restore. `action=chunk` (`upload_id`, `index`, `total`, `chunk`) → `start` (restores manga + covers, returns `total_chapters`) → `step` repeated until `done` (restores chapters + progress, ~15 s per call) · `cancel`. Existing title / chapter = skipped. Accepts old v2.x backups |
 | `change_password.php` | POST `current`, `new` (≥ 10 chars), `confirm` | Rewrites `config/auth.php`; all other sessions are signed out |
 | `get_security_log.php` | GET | Last 100 entries of the security journal |

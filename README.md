@@ -13,7 +13,7 @@ A personal manga collection manager built with PHP, MySQL and vanilla JavaScript
 - **Continue reading strip** – the 6 manga you read most recently, with chapter, page and progress bar, one click to resume
 - **Statistics** (⚙️ > Statistiques) – *Reading* tab: chapters finished, pages read, last 7 / 30 days, 14-day chart, current and record streak, favourite weekday, pages per active day, completion rate, most-read manga. *Collection* tab: totals, average rating, archive size, split by status / language / rating, manga added per month, heaviest archives
 - **Duplicate detection** – adding a title that already exists asks for confirmation; JSON import skips duplicates
-- **Full backup** – ⚙️ > *Sauvegarde complète (ZIP)* exports every manga **and their local cover images**; *Restaurer une sauvegarde* adds back what is missing without overwriting anything (chapter archives are not included - they are too heavy)
+- **Full export / import** – ⚙️ > *Tout exporter* creates one ZIP with every manga, **cover images, chapter archives and reading progress**; *Tout importer* restores everything automatically (the file is sent in small chunks, so PHP upload limits don't matter, even for several GB). Nothing is overwritten: same title / same chapter = skipped, so importing twice is safe. *Export léger* skips the chapter archives.
 - **Quick actions** – `+1 ch.` button, 🌐 button to open the external reading site, import / export of the collection (JSON)
 - **Security** – see the *Security* section below (session hardening, security headers, CSRF + Origin check, login lock, change password from the UI, security journal, protected folders, upload hardening)
 
@@ -55,7 +55,7 @@ With the project folder served as is, the rewrite rules of the root `.htaccess` 
 | Old location | New location |
 |---|---|
 | `index.php` | `public/index.php` |
-| `add_manga.php`, `get_*.php`, `delete_manga.php`, `manage_chapters.php`, `save_progress.php`, `download_chapter.php`, `backup.php`, `restore_backup.php`, `change_password.php` | `public/api/` |
+| `add_manga.php`, `get_*.php`, `delete_manga.php`, `manage_chapters.php`, `save_progress.php`, `download_chapter.php`, `backup.php`, `import_backup.php`, `change_password.php` | `public/api/` |
 | `js/manga.js`, `style/manga.css` | `public/assets/js/`, `public/assets/css/` |
 | `config/security.php`, `config/schema.php`, `webp_optimizer.php`, `webp_worker.php` | `src/` |
 | `optimize_existing_chapters.php` | `tools/` (command line only) |
@@ -101,7 +101,7 @@ Interrupted? Resume after a chapter id with `php tools/optimize_existing_chapter
 - **Read** – on a card, **📖 Reprendre** opens the built-in reader when chapters are archived (otherwise the external site). The hover button **🌐** always opens the external reading site.
 - **Archive chapters** – 📦 on a card → choose one or several ZIP files (images inside; the chapter number is guessed from the file name and editable). Uploading an existing chapter number asks whether to replace it.
 - **Reader** – arrows ← → (page mode), swipe on mobile, `Esc` to close, ⏮ ⏭ to change chapter, 📜 / 📄 to change mode. Progress is saved automatically.
-- **Import / export** – ⚙️ menu. The JSON export contains the manga entries only; local cover images and reading progress are not in it - use the **ZIP backup** to keep the covers. Reading progress is tied to the chapter archives, so it is not part of the backup.
+- **Import / export** – ⚙️ menu. The JSON export contains the manga entries only. For a complete move or backup (covers, chapters, reading progress) use *Tout exporter* / *Tout importer*. The export needs free disk space of about the size of your library (temporary file in `storage/tmp/`, checked beforehand).
 
 ## 🔒 Security
 

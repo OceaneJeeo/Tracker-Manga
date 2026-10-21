@@ -108,8 +108,9 @@ $csrfToken = $isAuthenticated ? mt_csrf_token() : '';
                 <div class="dropdown-menu" id="menuImportExport">
                     <button class="dropdown-item" onclick="exportCollection();toggleDropdown('menuImportExport')">📤 Exporter JSON</button>
                     <button class="dropdown-item" onclick="triggerImport();toggleDropdown('menuImportExport')">📥 Importer JSON</button>
-                    <button class="dropdown-item" onclick="downloadBackup();toggleDropdown('menuImportExport')">💾 Sauvegarde complète (ZIP)</button>
-                    <button class="dropdown-item" onclick="triggerRestore();toggleDropdown('menuImportExport')">♻️ Restaurer une sauvegarde</button>
+                    <button class="dropdown-item" onclick="downloadBackup(true);toggleDropdown('menuImportExport')">💾 Tout exporter (covers + chapitres)</button>
+                    <button class="dropdown-item" onclick="downloadBackup(false);toggleDropdown('menuImportExport')">🪶 Export léger (sans chapitres)</button>
+                    <button class="dropdown-item" onclick="triggerRestore();toggleDropdown('menuImportExport')">♻️ Tout importer (sauvegarde ZIP)</button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-item" onclick="openStatsModal();toggleDropdown('menuImportExport')">📈 Statistiques</button>
                     <div class="dropdown-divider"></div>
@@ -367,6 +368,26 @@ $csrfToken = $isAuthenticated ? mt_csrf_token() : '';
             <button class="modal-close" onclick="closeModal('statsModal')">×</button>
         </div>
         <div class="modal-body" id="statsBody"></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: Backup import progress
+═══════════════════════════════════════════ -->
+<div class="modal-backdrop" id="importModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>♻️ Import de la sauvegarde</h2>
+            <button class="modal-close" id="importClose" onclick="closeModal('importModal')" style="display:none">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="importStatus" style="margin-bottom:1rem;color:var(--text2)">Préparation…</p>
+            <div style="height:10px;border-radius:99px;background:var(--bg3);overflow:hidden">
+                <div id="importBar" style="height:100%;width:0;background:var(--accent1);transition:width .3s ease"></div>
+            </div>
+            <p id="importDetail" style="margin-top:.75rem;font-size:.8rem;color:var(--text3)"></p>
+            <p style="margin-top:1rem;font-size:.75rem;color:var(--text3)">Garde cette page ouverte jusqu'à la fin. Rien n'est écrasé : ce qui existe déjà est ignoré.</p>
+        </div>
     </div>
 </div>
 

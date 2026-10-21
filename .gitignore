@@ -8,6 +8,9 @@ public/img/manga/*
 storage/archives/chapters/*
 !storage/archives/chapters/.gitkeep
 
+# Temporary export / import files
+storage/tmp/*
+
 # Security journal
 storage/logs/*
 !storage/logs/.gitkeep
